@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/CF.iml" filepath="$PROJECT_DIR$/.idea/CF.iml" />
+      <module fileurl="file://$USER_HOME$/bbc/workspace/nitro/trunk/nitro-xquery/.idea/nitro-xquery.iml" filepath="$USER_HOME$/bbc/workspace/nitro/trunk/nitro-xquery/.idea/nitro-xquery.iml" />
+      <module fileurl="file://$USER_HOME$/bbc/work/projects/cosmos-stacks/trunk/.idea/trunk.iml" filepath="$USER_HOME$/bbc/work/projects/cosmos-stacks/trunk/.idea/trunk.iml" />
+    </modules>
+  </component>
+</project>

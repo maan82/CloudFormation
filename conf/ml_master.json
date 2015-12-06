@@ -1,0 +1,136 @@
+{
+  "MasterStack": "ml-stacks",
+  "Component": "ml-master",
+  "Type": "MarkLogic",
+  "MarkLogicAMIImageId": "ami-5bfcb131",
+  "NumberOfInstancesPerZone": 1,
+  "InstanceType": "t2.small",
+  "EbsOptimized": "true",
+  "IamInstanceProfile": "rasingh-MarkLogic-role",
+  "KeyName": "rasingh-MarkLogic",
+  "Tags": [
+    "MarkLogic"
+  ],
+  "Tenancy": "default",
+  "LoadBalancer": {
+    "AppCookieStickinessPolicy": [
+      {
+        "CookieName": "SessionID",
+        "PolicyName": "MLSession"
+      }
+    ],
+    "ConnectionDrainingPolicy": {
+      "Enabled": "true",
+      "Timeout": "60"
+    },
+    "CrossZone": "true",
+    "Listeners": [
+      {
+        "LoadBalancerPort": "8000",
+        "InstancePort": "8000",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8001",
+        "InstancePort": "8001",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8002",
+        "InstancePort": "8002",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8003",
+        "InstancePort": "8003",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8004",
+        "InstancePort": "8004",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8005",
+        "InstancePort": "8005",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8006",
+        "InstancePort": "8006",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8007",
+        "InstancePort": "8007",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      },
+      {
+        "LoadBalancerPort": "8008",
+        "InstancePort": "8008",
+        "Protocol": "HTTP",
+        "PolicyNames": [
+          "MLSession"
+        ]
+      }
+    ],
+    "HealthCheck": {
+      "Target": "HTTP:7997/",
+      "HealthyThreshold": "3",
+      "UnhealthyThreshold": "5",
+      "Interval": "10",
+      "Timeout": "5"
+    },
+    "Scheme": "internal"
+  },
+  "LoadBalancedPorts": {
+    "FromPort": 9000,
+    "ToPort": 9100
+  },
+  "ClusterPorts":  {
+    "FromPort": 7997,
+    "ToPort": 8002
+  },
+  "ConfigVolumes": {
+    "Encrypted": "false",
+    "VolumeType": "gp2",
+    "Iops": "10",
+    "Size": "10",
+    "FromSnapshot": "true",
+    "DeletionPolicy": "Delete"
+  },
+  "DataVolumes": {
+    "Encrypted": "false",
+    "VolumeType": "gp2",
+    "Iops": "10",
+    "Size": "10",
+    "FromSnapshot": "true",
+    "DeletionPolicy": "Delete"
+  },
+  "Alarms": [
+  ]
+}

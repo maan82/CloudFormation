@@ -1,0 +1,19 @@
+{
+    "Region": "us-east-1",
+    "Zones": [ "b", "c", "e" ],
+    "VpcId": "vpc-6a80380e",
+    "Subnets": {
+        "Sandbox_DEV": {
+            "PublicSubnets": {
+                "Sandbox_DEV_PUB_1b": "subnet-6be5df40",
+                "Sandbox_DEV_PUB_1c": "subnet-7358a505",
+                "Sandbox_DEV_PUB_1e": "subnet-9b4ef1a6"
+            },
+            "PrivateSubnets": {
+                "Sandbox_DEV_PVT_1b": "subnet-c4e4deef",
+                "Sandbox_DEV_PVT_1c": "subnet-1558a563",
+                "Sandbox_DEV_PVT_1e": "subnet-e04ef1dd"
+            }
+        }
+    }
+}
