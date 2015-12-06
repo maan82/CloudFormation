@@ -5,7 +5,7 @@
   "MarkLogicAMIImageId": "ami-5bfcb131",
   "NumberOfInstancesPerZone": 1,
   "InstanceType": "t2.small",
-  "EbsOptimized": "true",
+  "EbsOptimized": "false",
   "IamInstanceProfile": "rasingh-MarkLogic-role",
   "KeyName": "rasingh-MarkLogic",
   "Tags": [

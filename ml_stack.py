@@ -32,34 +32,20 @@ def get_private_subnets(aws_config):
     return aws_config["Subnets"]["Sandbox_DEV"]["PrivateSubnets"]
 
 
-def create_tags(config, base, az, instanceNumber):
+def create_key_value_tags(config, base, az, instanceNumber):
     tags = []
     for tag in config["Tags"]:
-        tags.append([tag + "-" + base + "-zone-" + az + "-instance-" + str(instanceNumber)])
+        tags.append(ec2.Tag("name", tag + "-" + base + "-zone-" + az + "-instance-" + str(instanceNumber)))
+    return tags
+
+def create_autoscalling_tags(config, base, az, instanceNumber):
+    tags = []
+    for tag in config["Tags"]:
+        tags.append(autoscaling.Tag("name", tag + "-" + base + "-zone-" + az + "-instance-" + str(instanceNumber), True))
     return tags
 
 def create_launch_config(aws_config, config, az, instanceNumber, security_groups):
-    launch_configuration = autoscaling.LaunchConfiguration(create_name("LaunchConfig", az, instanceNumber))
-    """
-            'AssociatePublicIpAddress': (boolean, False),
-        'BlockDeviceMappings': (list, False),
-        'ClassicLinkVPCId': (basestring, False),
-        'ClassicLinkVPCSecurityGroups': ([basestring], False),
-        'EbsOptimized': (boolean, False),
-        'IamInstanceProfile': (basestring, False),
-        'ImageId': (basestring, True),
-        'InstanceId': (basestring, False),
-        'InstanceMonitoring': (boolean, False),
-        'InstanceType': (basestring, True),
-        'KernelId': (basestring, False),
-        'KeyName': (basestring, False),
-        'Metadata': (Metadata, False),
-        'PlacementTenancy': (basestring, False),
-        'RamDiskId': (basestring, False),
-        'SecurityGroups': (list, False),
-        'SpotPrice': (basestring, False),
-        'UserData': (basestring, False),
-    """
+    launch_configuration = autoscaling.LaunchConfiguration(create_lauch_config_name(az, instanceNumber))
     launch_configuration.EbsOptimized = config["EbsOptimized"]
     launch_configuration.IamInstanceProfile = config["IamInstanceProfile"]
     launch_configuration.ImageId = config["MarkLogicAMIImageId"]
@@ -77,15 +63,37 @@ def create_launch_config(aws_config, config, az, instanceNumber, security_groups
     return launch_configuration
 
 
+def create_autoscalling_group(aws_config, config, az, instanceNumber, security_groups, load_balancers):
+    auto_scaling_group = autoscaling.AutoScalingGroup(create_name("AutoScalingGroup", az, instanceNumber))
+    auto_scaling_group.AvailabilityZones = [get_availability_zone(aws_config, az)]
+    auto_scaling_group.LaunchConfigurationName = Ref(create_lauch_config_name(az, instanceNumber))
+    load_balancer_list = []
+    for load_balancer in load_balancers:
+        load_balancer_list.append(Ref(load_balancer))
+    auto_scaling_group.LoadBalancerNames = load_balancer_list
+    auto_scaling_group.MaxSize = 1
+    auto_scaling_group.MinSize = 1
+    auto_scaling_group.Tags = create_autoscalling_tags(config, "loadbalancer", az, instanceNumber)
+    auto_scaling_group.VPCZoneIdentifier = [aws_config["Subnets"]["Sandbox_DEV"]["PrivateSubnets"]["Sandbox_DEV_PVT_1"+az]]
+    return auto_scaling_group
+
+
+def get_availability_zone(aws_config, az):
+    return aws_config["Region"] + az
+
+
+def create_lauch_config_name(az, instanceNumber):
+    return create_name("LaunchConfig", az, instanceNumber)
+
 
 def create_instance(aws_config, config, az, instanceNumber):
     instance = ec2.Instance(create_name("MarkLogic", az, instanceNumber))
-    instance.AvailabilityZone = az
+    instance.AvailabilityZone = get_availability_zone(aws_config, az)
     instance.EbsOptimized = config["EbsOptimized"]
     instance.ImageId = config["MarkLogicAMIImageId"]
     instance.InstanceType = config["InstanceType"]
     instance.SubnetId = get_subnet_id(aws_config, az)
-    instance.Tags = create_tags(config, "instance", az, instanceNumber)
+    instance.Tags = create_key_value_tags(config, "instance", az, instanceNumber)
     instance.Tenancy = config["Tenancy"]
     return instance
 
@@ -98,30 +106,32 @@ def create_network_interface(aws_config, config, az, instanceNumber, group_set):
         group_set_list.append(Ref(group))
     network_interface.GroupSet = group_set_list
     network_interface.SubnetId = get_subnet_id(aws_config, az)
-    network_interface.Tags = create_tags(config, "NetworkInterface", az, instanceNumber)
+    network_interface.Tags = create_key_value_tags(config, "NetworkInterface", az, instanceNumber)
     return network_interface
 
 
 def create_data_volume(aws_config, config, az, instanceNumber):
     data_volume = ec2.Volume(create_name("MarkLogicDataVolume", az, instanceNumber))
-    data_volume.AvailabilityZone = az
+    data_volume.AvailabilityZone = get_availability_zone(aws_config, az)
     data_volumes = config["DataVolumes"]
     data_volume.Encrypted = data_volumes["Encrypted"]
-    data_volume.Iops = data_volumes["Iops"]
+    if data_volumes["VolumeType"] != "gp2":
+        data_volume.Iops = data_volumes["Iops"]
     data_volume.Size = data_volumes["Size"]
-    data_volume.Tags = create_tags(config, "DataVolume", az, instanceNumber)
+    data_volume.Tags = create_key_value_tags(config, "DataVolume", az, instanceNumber)
     data_volume.VolumeType = data_volumes["VolumeType"]
     return data_volume
 
 
 def create_config_volume(aws_config, config, az, instanceNumber):
     data_volume = ec2.Volume(create_name("MarkLogicConfigVolume", az, instanceNumber))
-    data_volume.AvailabilityZone = az
+    data_volume.AvailabilityZone = get_availability_zone(aws_config, az)
     config_volumes = config["ConfigVolumes"]
     data_volume.Encrypted = config_volumes["Encrypted"]
-    data_volume.Iops = config_volumes["Iops"]
+    if config_volumes["VolumeType"] != "gp2":
+        data_volume.Iops = config_volumes["Iops"]
     data_volume.Size = config_volumes["Size"]
-    data_volume.Tags = create_tags(config, "ConfigVolume", az, instanceNumber)
+    data_volume.Tags = create_key_value_tags(config, "ConfigVolume", az, instanceNumber)
     data_volume.VolumeType = config_volumes["VolumeType"]
     return data_volume
 
@@ -183,7 +193,7 @@ def create_load_balancer(aws_config, config, security_groups):
         security_groups_list.append(Ref(group))
 
     load_balancer.SecurityGroups = security_groups_list
-    load_balancer.Tags = create_tags(config, "LoadBalancer", "allzones", None)
+    load_balancer.Tags = create_key_value_tags(config, "LoadBalancer", "allzones", None)
     return load_balancer
 
 
@@ -215,38 +225,20 @@ if __name__ == '__main__':
     load_balancer_security_group = create_load_balancer_security_group(aws_config, config)
     template.add_resource(cluster_security_group)
     template.add_resource(load_balancer_security_group)
-    template.add_resource(create_load_balancer(aws_config, config, [load_balancer_security_group]))
+    load_balancer = create_load_balancer(aws_config, config, [load_balancer_security_group])
+    template.add_resource(load_balancer)
 
     for az in zones:
         for instanceNumber in range(1, config["NumberOfInstancesPerZone"] + 1):
             launch_config = create_launch_config(aws_config, config, az, instanceNumber, [cluster_security_group])
             template.add_resource(launch_config)
-            instance = create_instance(aws_config, config, az, instanceNumber)
+            autoscalling_group = create_autoscalling_group(aws_config, config, az, instanceNumber, [cluster_security_group], [load_balancer])
+            template.add_resource(autoscalling_group)
             config_volume = create_config_volume(aws_config, config, az, instanceNumber)
-            template.add_resource(ec2.VolumeAttachment(
-                create_name("ConfigVolumeAttachment", az, instanceNumber),
-                Device="/dev/xvdh",
-                InstanceId=Ref(instance),
-                VolumeId=Ref(config_volume)
-            ))
             template.add_resource(config_volume)
             data_volume = create_data_volume(aws_config, config, az, instanceNumber)
-            template.add_resource(ec2.VolumeAttachment(
-                create_name("DataVolumeAttachment", az, instanceNumber),
-                Device="/dev/xvdg",
-                InstanceId=Ref(instance),
-                VolumeId=Ref(data_volume)
-            ))
             template.add_resource(data_volume)
             network_interface = create_network_interface(aws_config, config, az, instanceNumber, [cluster_security_group])
-            template.add_resource(ec2.NetworkInterfaceAttachment(
-                create_name("NetworkInterfaceAttachment", az, instanceNumber),
-                DeleteOnTermination="false",
-                DeviceIndex=1,
-                InstanceId=Ref(instance),
-                NetworkInterfaceId=Ref(network_interface)
-            ))
             template.add_resource(network_interface)
-            template.add_resource(instance)
 
     print(template.to_json())
