@@ -9,7 +9,7 @@ Options:
     -f CONFIGURATION_FILE       MarkLogic cluster Configuration file [default: conf/ml_master.json]
 """
 from docopt import docopt
-from troposphere import Ref, Template
+from troposphere import Ref, Template, cloudformation
 import troposphere.ec2 as ec2
 import troposphere.elasticloadbalancing as elb
 import troposphere.autoscaling as autoscaling
@@ -60,6 +60,43 @@ def create_launch_config(aws_config, config, az, instanceNumber, security_groups
         "#!/bin/bash\n",
         "echo \"<?php phpinfo(); ?>\" > /tmp/userdata.log"
     ]))
+    launch_configuration.Metadata=autoscaling.Metadata(
+        cloudformation.Init({
+            "config": cloudformation.InitConfig(
+                files=cloudformation.InitFiles({
+                    "/etc/rsyslog.d/20-somethin.conf": cloudformation.InitFile(
+                        source=Join('', [
+                            "http://",
+                            "a",
+                            ".s3.amazonaws.com/stacks/",
+                            "RootStackName",
+                            "/env/etc/rsyslog.d/20-somethin.conf"
+                        ]),
+                        mode="000644",
+                        owner="root",
+                        group="root",
+                        authentication="DeployUserAuth"
+                    )
+                }),
+                services={
+                    "sysvinit": cloudformation.InitServices({
+                        "rsyslog": cloudformation.InitService(
+                            enabled=True,
+                            ensureRunning=True,
+                            files=['/etc/rsyslog.d/20-somethin.conf']
+                        )
+                    })
+                }
+            )
+        }),
+        cloudformation.Authentication({
+            "DeployUserAuth": cloudformation.AuthenticationBlock(
+                type="S3",
+                accessKeyId="Ref(DeployUserAccessKey)",
+                secretKey="Ref(DeployUserSecretKey)"
+            )
+            })
+    )
     return launch_configuration
 
 
